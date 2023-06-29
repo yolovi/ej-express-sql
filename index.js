@@ -1,3 +1,6 @@
+//TODO: EJERCICIOS QUE FALTAN:
+//Crea un endpoint que muestre de forma descendente los productos.
+
 const express = require("express");
 const app = express();
 const PORT = 3000;
@@ -9,8 +12,8 @@ const db = mysql.createConnection({
   user: "root",
   password: "mySql.1234",
   database: "expressDB", // este punto se hace despues de crear la base de datos (el primer endpoint)
+  // TODO:cambiar el nombre de la db por uno mas coherete greengrocerDB y en todas las partes que ponga expressDB
 });
-
 
 //establecemos la conexion con la base de datos
 db.connect();
@@ -18,12 +21,11 @@ db.connect();
 //MIDDLEWARES
 app.use(express.json());
 
-
 //ENDPOINTS
 
 //Crear la base de datos
 app.get("/createdb", (req, res) => {
-  let sql = "CREATE DATABASE expressDB";
+  let sql = "CREATE DATABASE expressDB"; //TODO:cambiar el nombre de la db por uno mas coherete greengrocerDB
   db.query(sql, (err, result) => {
     if (err) throw err;
     console.log(result);
@@ -35,6 +37,7 @@ app.get("/createdb", (req, res) => {
 app.get("/createproductstable", (req, res) => {
   let sql =
     "CREATE TABLE products(id int AUTO_INCREMENT,title VARCHAR(255), body VARCHAR(255), PRIMARY KEY(id))";
+  // TODO:cambiar el title por name_product, aqui y en el resto de codigo
   db.query(sql, (err, result) => {
     if (err) throw err;
     console.log(result);
@@ -46,6 +49,7 @@ app.get("/createproductstable", (req, res) => {
 app.get("/createcategoriestable", (req, res) => {
   let sql =
     "CREATE TABLE categories(id int AUTO_INCREMENT,name VARCHAR(50), PRIMARY KEY(id))";
+  // TODO:cambiar el name por name_category, aqui y en el resto de codigo
   db.query(sql, (err, result) => {
     if (err) throw err;
     console.log(result);
@@ -118,53 +122,103 @@ app.get("/products", (req, res) => {
 
 // endpoint para mostrar todas las categorias
 app.get("/categories", (req, res) => {
-    let sql = "SELECT * FROM categories";
-    db.query(sql, (err, result) => {
-      if (err) throw err;
-      res.send(result);
-    });
+  let sql = "SELECT * FROM categories";
+  db.query(sql, (err, result) => {
+    if (err) throw err;
+    res.send(result);
   });
+});
 
-//--------------------------------------------------------------
-
-//Ruta para insertar una relación en la tabla intermedia cat_prod
-app.post('/cat_prod', (req, res) => {
+//ruta para insertar una relación en la tabla intermedia cat_prod
+app.post("/cat_prod", (req, res) => {
   const { productId, categoryId } = req.body;
 
-  const sql = 'INSERT INTO cat_prod (product_id, category_id) VALUES (?, ?)'; // el ? es un marcador de posicion 
-  const values = [productId, categoryId]; //los valores reales 
+  const sql = "INSERT INTO cat_prod (product_id, category_id) VALUES (?, ?)"; // el ? es un marcador de posicion
+  const values = [productId, categoryId]; //los valores reales
 
   db.query(sql, values, (err, result) => {
     if (err) {
-      console.error('Error al ejecutar la consulta: ', err);
-      res.status(500).send('Error en el servidor');
+      console.error("Error al ejecutar la consulta: ", err);
+      res.status(500).send("Error en el servidor");
       return;
     }
-    res.send({msg:'Relación insertada correctamente ', result});
+    res.send({ msg: "Relación insertada correctamente ", result });
   });
 });
 
 //Los valores reales que se insertarán se representan mediante marcadores de posición ?. Los marcadores de posición se utilizan para evitar problemas de seguridad como la inyección de SQL y también permiten reutilizar la consulta.
 
-
-
-// enpoint para mostrar todos los products con sus categorias
+// endpoint para mostrar todos los products con sus categorias
 app.get("/cat_prod", (req, res) => {
-    // let sql = "SELECT * FROM categories";
-    // `UPDATE categories SET name = '${newName}' WHERE id = ${req.params.id} `
-    let sql = `SELECT products.title, categories.name FROM cat_prod 
-    INNER JOIN products ON categories.id = cat_prod.category_id
-    INNER JOIN expressDB.products ON products.id = cat_prod.product_id;`;
-    db.query(sql, (err, result) => {
-      if (err) throw err;
-      res.send(result);
-    });
+  const sql = `SELECT products.title, categories.name FROM cat_prod 
+    JOIN products ON cat_prod.product_id = products.id
+    JOIN categories ON cat_prod.category_id = categories.id;`;
+  db.query(sql, (err, result) => {
+    if (err) throw err;
+    res.send(result);
   });
+});
+
+//FIXME: Crea un endpoint donde puedas eliminar un producto por su id
+//app.delete("delete/id/:id", (req, res) => {
+
+  // const productId = req.params.id
+  // const sql = `DELETE FROM products WHERE id = ${productId}`
+  // console.log(sql)
+
+  // db.query(sql, productId , (error, results) => {
+  //   if (error) {
+  //     console.error("Error querying the database:", error);
+  //     res.status(500).send("Internal Server Error");
+  //     return;
+  //   }
+  //   if (results.length === 0) {
+  //     res.send(`Product with id ${productId} not found`);
+  //   } else {
+  //     // Delete the product
+  //     const deleteQuery = "DELETE FROM products WHERE id = productId";
+  //     db.query(deleteQuery, [productId], (deleteError, deleteResults) => {
+  //       if (deleteError) {
+  //         console.error("Error deleting the product:", deleteError);
+  //         res.status(500).send("Internal Server Error");
+  //         return;
+  //       }
+  //       res.send(`Product with id ${productId} deleted successfully`);
+  //     });
+  //   }
+  // });
+// });
 
 
-// SELECT name_product, name_category FROM ecommerce.productoscategorias 
-// INNER JOIN ecommerce.categories ON categories.id = productoscategorias.category_id
-// INNER JOIN ecommerce.products ON products.id = productoscategorias.product_id;
+//Crea un endpoint donde puedas buscar un producto por su nombre
+
+app.get("/products/filter/title/:title", (req, res) => {
+  // Ruta GET para filtrar productos por nombre
+
+  const productTitle = req.params.title;
+  // Utiliza una consulta SQL para filtrar los productos cuyo título coincida con "productTitle"
+  const sql = `SELECT * FROM products WHERE LOWER(title) = LOWER(?)`;
+  db.query(sql, [productTitle], (err, result) => {
+    if (err) {
+      // Si ocurre un error durante la consulta, se envía una respuesta con el código de estado 500 (Internal Server Error)
+      console.error(err);
+      res
+        .status(500)
+        .send({ error: "An error occurred while fetching products" });
+    } else {
+      if (result.length > 0) {
+        // Si se encuentran productos, se envían los productos encontrados como respuesta
+        res.send({ results: result });
+      } else {
+        // Si no se encuentran productos, se envía un mensaje de error con el código de estado 404 (Not Found)
+        res
+          .status(404)
+          .send({ msg: `Product with title "${productTitle}" not found` });
+      }
+    }
+  });
+});
+
 
 //LISTEN PUERTO
 app.listen(PORT, () => {
