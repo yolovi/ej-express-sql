@@ -209,7 +209,7 @@ app.get("/categories/filter/id/:id", (req, res) => {
   });
 });
 
-//FIXME: Crea un endpoint donde puedas eliminar un producto por su id
+//FIXME: Crea un endpoint donde puedas eliminar un producto por su id // TODO: FALTA ON CASCADE ver repo
 app.delete('/id/:id', (req, res) => {
   const productId = req.params.id;
   // Check if the product exists
