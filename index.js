@@ -1,5 +1,7 @@
 //TODO: EJERCICIOS QUE FALTAN:
 //Crea un endpoint que muestre de forma descendente los productos.
+//Ejercicios 1.2.MVC
+//----------------------------------------------------
 
 const express = require("express");
 const app = express();
@@ -21,11 +23,13 @@ db.connect();
 //MIDDLEWARES
 app.use(express.json());
 
+//RUTAS
+
 //ENDPOINTS
 
 //Crear la base de datos
 app.get("/createdb", (req, res) => {
-  let sql = "CREATE DATABASE expressDB"; //TODO:cambiar el nombre de la db por uno mas coherete greengrocerDB
+  let sql = "CREATE DATABASE expressDB"; 
   db.query(sql, (err, result) => {
     if (err) throw err;
     console.log(result);
@@ -37,7 +41,6 @@ app.get("/createdb", (req, res) => {
 app.get("/createproductstable", (req, res) => {
   let sql =
     "CREATE TABLE products(id int AUTO_INCREMENT,title VARCHAR(255), body VARCHAR(255), PRIMARY KEY(id))";
-  // TODO:cambiar el title por name_product, aqui y en el resto de codigo
   db.query(sql, (err, result) => {
     if (err) throw err;
     console.log(result);
@@ -49,7 +52,6 @@ app.get("/createproductstable", (req, res) => {
 app.get("/createcategoriestable", (req, res) => {
   let sql =
     "CREATE TABLE categories(id int AUTO_INCREMENT,name VARCHAR(50), PRIMARY KEY(id))";
-  // TODO:cambiar el name por name_category, aqui y en el resto de codigo
   db.query(sql, (err, result) => {
     if (err) throw err;
     console.log(result);
@@ -159,39 +161,8 @@ app.get("/cat_prod", (req, res) => {
   });
 });
 
-//FIXME: Crea un endpoint donde puedas eliminar un producto por su id
-//app.delete("delete/id/:id", (req, res) => {
-
-  // const productId = req.params.id
-  // const sql = `DELETE FROM products WHERE id = ${productId}`
-  // console.log(sql)
-
-  // db.query(sql, productId , (error, results) => {
-  //   if (error) {
-  //     console.error("Error querying the database:", error);
-  //     res.status(500).send("Internal Server Error");
-  //     return;
-  //   }
-  //   if (results.length === 0) {
-  //     res.send(`Product with id ${productId} not found`);
-  //   } else {
-  //     // Delete the product
-  //     const deleteQuery = "DELETE FROM products WHERE id = productId";
-  //     db.query(deleteQuery, [productId], (deleteError, deleteResults) => {
-  //       if (deleteError) {
-  //         console.error("Error deleting the product:", deleteError);
-  //         res.status(500).send("Internal Server Error");
-  //         return;
-  //       }
-  //       res.send(`Product with id ${productId} deleted successfully`);
-  //     });
-  //   }
-  // });
-// });
-
 
 //Crea un endpoint donde puedas buscar un producto por su nombre
-
 app.get("/products/filter/title/:title", (req, res) => {
   // Ruta GET para filtrar productos por nombre
 
@@ -215,6 +186,53 @@ app.get("/products/filter/title/:title", (req, res) => {
           .status(404)
           .send({ msg: `Product with title "${productTitle}" not found` });
       }
+    }
+  });
+});
+
+//Crea un endpoint donde puedas seleccionar una categoría por id
+app.get("/categories/filter/id/:id", (req, res) => {
+  const categoryId = req.params.id;
+  const sql = "SELECT * FROM categories WHERE id = ?";
+  db.query(sql, [categoryId], (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ msg: "Internal server error" });
+              return;
+    }
+    if (results.length > 0) {
+      const foundCategory = results[0];
+      res.send({ Category: categoryId, result: foundCategory });
+    } else {
+      res.status(404).send({ msg: "Category not found" });
+    }
+  });
+});
+
+//FIXME: Crea un endpoint donde puedas eliminar un producto por su id
+app.delete('/id/:id', (req, res) => {
+  const productId = req.params.id;
+  // Check if the product exists
+  const checkQuery = 'SELECT * FROM products WHERE id = ?';
+  db.query(checkQuery, [productId], (error, results) => {
+    if (error) {
+      console.error('Error querying the database:', error);
+      res.status(500).send('CheckQuery Internal Server Error');
+      return;
+    }
+    if (results.length === 0) {
+      res.send(`Product with id ${productId} not found`);
+    } else {
+      // Delete the product
+      const deleteQuery = 'DELETE FROM products WHERE id = ?';
+      db.query(deleteQuery, [productId], (deleteError, deleteResults) => {
+        if (deleteError) {
+          console.error('Error deleting the product:', deleteError);
+          res.status(500).send('Delete Internal Server Error');
+          return;
+        }
+        res.send(`Product with id ${productId} deleted successfully`);
+      });
     }
   });
 });
